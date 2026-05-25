@@ -24,12 +24,72 @@ REGLAS OBLIGATORIAS:
 3. Usa exactamente los nombres de tablas y columnas que aparecen en el esquema.
 4. Si la pregunta no se puede responder con los datos disponibles, responde: SELECT 'No tengo informacion suficiente para responder esa pregunta' AS Mensaje
 5. Usa TOP 100 cuando la consulta pueda retornar muchos registros, para no saturar el sistema.
-6. Las fechas en SQL Server se escriben como '2024-01-01'.
+6. Las fechas en SQL Server se escriben como '2024-01-01'.Para año actual usa YEAR(GETDATE()).
 7. Para buscar texto usa LIKE '%texto%'.
 8. Siempre usa alias descriptivos en espanol para las columnas del resultado.
+9. Para nombres completos de personas concatena: PrimerNombre + ' ' + PrimerApellido.
+10. SIEMPRE usa la tabla OrdeDeTrabajo (no OrdenDeTrabajo) y DetalleManoDeObra (no DetalleManoDObra).
  
 ESQUEMA DE LA BASE DE DATOS DonaldV2:
-{schema}
+SOCIOS y PERSONAS
+SocioNegocio: CodigoSocio(PK), PrimerNombre, SegundoNombre, PrimerApellido, SegundoApellido, FechaNacimiento, CUI, NIT, RazonSocial, Genero, CodigoTipoSocioNegocio
+SocioNegocioDireccion: CodigoSocioNegocioDireccion(PK), Calle, Avenida, Otro, Zona, Colonia, CodigoMunicipio, DepartamentoCodigo, CodigoTipoDireccion, CodigoSocioNegocio(FK)
+SocioNegocioTelefono: CodigoSocio(FK), CodigoSocioNegocioTelefono, Numero, CodigoTipoTelefono
+
+CLIENTES, EMPLEADOS, PROVEEDORES
+Cliente: CodigoCliente(PK), CodigoSocio(FK -> SocioNegocio)
+Empleado: CodigoEmpleado(PK), CodigoSocio(FK -> SocioNegocio)
+Proveedor: CodigoProveedor(PK), CodigoSocio(FK -> SocioNegocio)
+
+AUTOS
+Automovil: CodigoAutomovil(PK), Placa, Color, VIN, Motor, Modelo(año), CodigoLinea(FK), CodigoMarca(FK)
+Marca: CodigoMarca(PK), Descripcion
+Linea: CodigoMarca(FK), CodigoLinea(PK), Descripcion
+
+CITAS Y ORDENES
+Cita: NumeroCita(PK), CodigoSucursal, CodigoCliente(FK), FechaCita, FechaRecepcion, Observaciones, CodigoEmpleado(FK), CodigoAutomovil(FK)
+Diagnostico: NumeroDiagnostico(PK), NumeroCita(FK), CodigoDiagnostico(FK)
+TipoDiagnostico: CodigoDiagnostico(PK), Descripcion
+OrdeDeTrabajo: NumeroOrden(PK), FechaOrden, Estado, NumeroCita(FK -> Cita)
+DetalleManoDeObra: NumeroOrden(FK), NumeroManoDeObra, Unidades, CodigoManoObra(FK), FechaInicio, FechaFin, CodigoEmpleado(FK), Serie, Numero, CodigoTipoDocumentoFiscal
+DetalleMaterial: NumeroOrden(FK), NumeroManoDeObra, CodigoMaterial(FK), NumeroDetalleMaterial, Unidades, PrecioVenta
+ManoObra: CodigoManoObra(PK), Descripcion, Precio
+
+MATERIALES E INVENTARIO
+Material: CodigoMaterial(PK), Descripcion, PrecioCosto, PrecioVenta, Saldo
+Bodega: CodigoSucursal(FK), CodigoBodega(PK), Descripcion
+MovimientoMaterial: NumeroMovimiento(PK), CodigoSucursal, CodigoBodega, FechaMovimiento, Referencia, CodigoTipoMovimiento
+DetalleMovimientoMaterial: NumeroMovimiento(FK), CodigoMaterial(FK), LineaDetalleMovimiento, Unidades
+
+FACTURACION Y PAGOS
+DocumentoFiscal: CodigoTipoDocumentoFiscal(FK), Serie, Numero(PK), FechaEmision, NIT, ValorTotal, IVA, Estado
+TipoDocumentoFiscal: CodigoTipoDocumentoFiscal(PK), Descripcion
+DetallePago: Serie, Numero(FK -> DocumentoFiscal), CodigoTipoDocumentoFiscal, NumeroPago, Valor, CodigoTipoPago(FK)
+TipoPago: CodigoTipoPago(PK), Descripcion
+
+SUCURSALES Y TALLERES
+Taller: CodigoTaller(PK), RazonSocial, NombreComercial, NIT
+Sucursal: CodigoSucursal(PK), NombreSucursal, CodigoTaller(FK)
+SucursalDireccion: CodigoSucursal(FK), CodigoSucursalDireccion, Calle, Avenida, Zona, CodigoMunicipio, DepartamentoCodigo
+SucursalTelefono: CodigoSucursal(FK), CodigoSucursalTelefono, Numero, CodigoTipoTelefono
+
+COMPRAS Y PROVEEDORES
+Requisicion: NumeroRequision(PK), FechaRequisicion, CodigoSucursal, CodigoEmpleado
+Cotizacion: NumeroRequision(FK), NumeroCotizacion(PK), FechaCotizacion, CodigoProveedore(FK)
+DetalleCotizacion: NumeroRequision(FK), NumeroCotizacion(FK), LineaCotizacion, CodigoMaterial, Unidades, PrecioCompra
+Pedido: NumeroRequision(FK), NumeroCotizacion(FK), NumeroPedido(PK)
+DetallePedido: NumeroPedido(FK), LineaPedido, CodigoMaterial(FK), Unidades, UnidadesRecibidas, PrecioCompra
+
+NOMINA Y RRHH
+ContratroTrabajo: NumeroContrato(PK), FechaEmision, Estado, CodigoTaller, CodigoEmpleado(FK), CodigoDepartamentoTrabajo, CodigoPuestoTrabajo
+Asistencia: CorellativoAsistencia(PK), CodigoEmpleado(FK), CodigoTipoAsistencia, FechaIngreso, FechaEgreso, Origen
+Nomina: CodigoNomina(PK), CodigoSucursal, Descripcion, Inicio, Fin
+NominaResumen: CodigoNomina(FK), NumeroResumen, CodigoEmpleado(FK), Salario, TotalIngresos, TotalDescuentos, Liquido, CodigoSucursal
+DetalleNomina: CodigoNomina(FK), NumeroDetalleNomina, CodigoTipoMovimientoNomina, Valor, CodigoEmpleado, CodigoSucursal
+
+GEOGRAFÍA
+Departamento: CodigoDepartamento(PK), Descripcion
+Municipio: DepartamentoCodigo(FK), CodigoMunicipio(PK), Descripcion
  
 RELACIONES IMPORTANTES:
 - SocioNegocio es la tabla base de clientes, empleados y proveedores
@@ -41,6 +101,7 @@ RELACIONES IMPORTANTES:
 - OrdeDeTrabajo.NumeroCita → Cita.NumeroCita
 - DetalleManoDeObra.NumeroOrden → OrdeDeTrabajo.NumeroOrden
 - DetalleMaterial.NumeroOrden → OrdeDeTrabajo.NumeroOrden
+- DocumentoFiscal con CodigoTipoDocumentoFiscal = 1 son FACTURAS
 - DocumentoFiscal contiene facturas, notas de credito y debito
 - DetallePago.Numero → DocumentoFiscal.Numero
 - Automovil.CodigoMarca → Marca.CodigoMarca
@@ -56,6 +117,18 @@ SQL: SELECT TOP 10 m.Descripcion AS Marca, COUNT(c.NumeroCita) AS TotalCitas FRO
  
 Pregunta: "Cual es el total de ventas del año 2024?"
 SQL: SELECT SUM(ValorTotal) AS TotalVentas2024 FROM DocumentoFiscal WHERE YEAR(FechaEmision) = 2024 AND CodigoTipoDocumentoFiscal = 1
+
+Pregunta: "Muestra el telefono del cliente con NIT 1000200-6"
+SQL: SELECT sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreCliente, snt.Numero AS Telefono FROM Cliente c JOIN SocioNegocio sn ON c.CodigoSocio = sn.CodigoSocio JOIN SocioNegocioTelefono snt ON sn.CodigoSocio = snt.CodigoSocio WHERE sn.NIT LIKE '%1000200-6%'
+
+Pregunta: "Muestra los 5 empleados con mas ordenes"
+SQL: SELECT TOP 5 sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreEmpleado, COUNT(o.NumeroOrden) AS TotalOrdenes FROM Empleado e JOIN SocioNegocio sn ON e.CodigoSocio = sn.CodigoSocio JOIN Cita c ON c.CodigoEmpleado = e.CodigoEmpleado JOIN OrdeDeTrabajo o ON o.NumeroCita = c.NumeroCita GROUP BY sn.PrimerNombre, sn.PrimerApellido ORDER BY TotalOrdenes DESC
+
+Pregunta: "Historial de servicios del vehiculo con placa P-888XXX"
+SQL: SELECT o.NumeroOrden, o.FechaOrden, mo.Descripcion AS Servicio, dmo.FechaInicio, dmo.FechaFin FROM OrdeDeTrabajo o JOIN Cita ci ON o.NumeroCita = ci.NumeroCita JOIN Automovil a ON ci.CodigoAutomovil = a.CodigoAutomovil JOIN DetalleManoDeObra dmo ON o.NumeroOrden = dmo.NumeroOrden JOIN ManoObra mo ON dmo.CodigoManoObra = mo.CodigoManoObra WHERE a.Placa LIKE '%P-888XXX%'
+
+Pregunta: "Total de ventas del año 2024"
+SQL: SELECT SUM(ValorTotal) AS TotalVentas2024 FROM DocumentoFiscal WHERE YEAR(FechaEmision) = 2024 AND CodigoTipoDocumentoFiscal = 1
 """
  
     payload = {
@@ -65,7 +138,7 @@ SQL: SELECT SUM(ValorTotal) AS TotalVentas2024 FROM DocumentoFiscal WHERE YEAR(F
         "options": {
             "temperature": 0.1,   # Baja temperatura = respuestas mas precisas
             "top_p": 0.9,
-            "num_predict": 200    # Maximo de tokens en la respuesta
+            "num_predict": 300    # Maximo de tokens en la respuesta
         }
     }
  
