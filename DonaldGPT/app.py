@@ -127,8 +127,14 @@ SQL: SELECT TOP 5 sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreEmpleado, C
 Pregunta: "Historial de servicios del vehiculo con placa P-888XXX"
 SQL: SELECT o.NumeroOrden, o.FechaOrden, mo.Descripcion AS Servicio, dmo.FechaInicio, dmo.FechaFin FROM OrdeDeTrabajo o JOIN Cita ci ON o.NumeroCita = ci.NumeroCita JOIN Automovil a ON ci.CodigoAutomovil = a.CodigoAutomovil JOIN DetalleManoDeObra dmo ON o.NumeroOrden = dmo.NumeroOrden JOIN ManoObra mo ON dmo.CodigoManoObra = mo.CodigoManoObra WHERE a.Placa LIKE '%P-888XXX%'
 
+Pregunta: "Total de ventas en la sucursal de Escuintla durante el ultimo trimestre"
+SQL: SELECT SUM(df.ValorTotal) AS TotalVentas, SUM(df.IVA) AS TotalIVA FROM DocumentoFiscal df JOIN DetalleManoDeObra dmo ON df.Serie = dmo.Serie AND df.Numero = dmo.Numero JOIN OrdeDeTrabajo o ON dmo.NumeroOrden = o.NumeroOrden JOIN Cita c ON o.NumeroCita = c.NumeroCita JOIN Sucursal s ON c.CodigoSucursal = s.CodigoSucursal WHERE s.NombreSucursal LIKE '%Escuintla%' AND df.FechaEmision >= DATEADD(QUARTER, -1, GETDATE()) AND df.CodigoTipoDocumentoFiscal = 1
+
 Pregunta: "Total de ventas del año 2024"
 SQL: SELECT SUM(ValorTotal) AS TotalVentas2024 FROM DocumentoFiscal WHERE YEAR(FechaEmision) = 2024 AND CodigoTipoDocumentoFiscal = 1
+
+Pregunta: "Muestra los clientes que tienen 30 años"
+SQL: SELECT sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreCliente FROM Cliente c JOIN SocioNegocio sn ON c.CodigoSocio = sn.CodigoSocio WHERE DATEDIFF(YEAR, sn.FechaNacimiento, GETDATE()) = 30
 """
  
     payload = {
