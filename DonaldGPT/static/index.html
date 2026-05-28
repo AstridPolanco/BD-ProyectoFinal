@@ -33,13 +33,6 @@
 <h1>🚗 Donald GPT — Prueba de Backend</h1>
 <p style="color:#666">Esta es una interfaz de prueba temporal. El frontend real lo hace el Integrante 3.</p>
  
-<!-- TEST DE CONEXION -->
-<div class="card">
-  <h3>🔌 Estado del Sistema</h3>
-  <button onclick="testConexion()" id="btn-test">Verificar Conexiones</button>
-  <div id="test-result" style="margin-top:12px"></div>
-</div>
- 
 <!-- CONSULTA -->
 <div class="card">
   <h3>💬 Hacer una Pregunta en Español</h3>
@@ -60,29 +53,6 @@
 </div>
  
 <script>
-async function testConexion() {
-  const div = document.getElementById('test-result');
-  const btn = document.getElementById('btn-test');
-  div.innerHTML = '<div class="spinner"></div> Verificando...';
-  btn.disabled = true;
-  try {
-    const r = await fetch('/api/test');
-    const data = await r.json();
-    div.innerHTML = `
-      <div class="${data.sql_server.startsWith('OK') ? 'ok' : 'error'}">
-        <b>SQL Server:</b> ${data.sql_server}
-      </div>
-      <div style="margin-top:8px" class="${data.ollama.startsWith('OK') ? 'ok' : 'error'}">
-        <b>Ollama:</b> ${data.ollama}
-      </div>
-    `;
-  } catch(e) {
-    div.innerHTML = `<div class="error">Error: ${e.message}</div>`;
-  } finally {
-    btn.disabled = false;
-  }
-}
- 
 async function hacerConsulta() {
   const pregunta = document.getElementById('pregunta').value.trim();
   if (!pregunta) { alert('Escribe una pregunta primero'); return; }
