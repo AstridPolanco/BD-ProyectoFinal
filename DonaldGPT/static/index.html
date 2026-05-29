@@ -1,120 +1,364 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Donald GPT — Prueba Backend</title>
-<style>
-  body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f0f0f0; }
-  h1 { color: #1a2a4a; }
-  .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-  textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; resize: vertical; }
-  button { background: #1e5799; color: white; border: none; padding: 12px 28px; border-radius: 6px; font-size: 15px; cursor: pointer; margin-top: 10px; }
-  button:hover { background: #1a4a80; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .sql-box { background: #1a1a2e; color: #00ff88; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; margin: 10px 0; white-space: pre-wrap; word-break: break-all; }
-  .error { background: #fff0f0; border: 1px solid #ffaaaa; padding: 12px; border-radius: 6px; color: #cc0000; }
-  .ok { background: #f0fff0; border: 1px solid #aaffaa; padding: 12px; border-radius: 6px; color: #006600; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: #1a2a4a; color: white; padding: 8px 10px; text-align: left; }
-  td { padding: 7px 10px; border-bottom: 1px solid #eee; }
-  tr:hover td { background: #f5f5ff; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-  .badge-ok { background: #e6f4ea; color: #1a6b3a; }
-  .badge-err { background: #fce8e6; color: #cc0000; }
-  .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #ccc; border-top-color: #1e5799; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .ejemplos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .ejemplo { background: #e8f0fe; border: 1px solid #c5d8f5; color: #1e5799; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; }
-  .ejemplo:hover { background: #c5d8f5; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donald GPT — Sistema Inteligente</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+    </style>
 </head>
-<body>
- 
-<h1>🚗 Donald GPT — Prueba de Backend</h1>
-<p style="color:#666">Esta es una interfaz de prueba temporal. El frontend real lo hace el Integrante 3.</p>
- 
-<!-- CONSULTA -->
-<div class="card">
-  <h3>💬 Hacer una Pregunta en Español</h3>
-  <textarea id="pregunta" placeholder="Ej: ¿Cuántas citas se realizaron en 2024?"></textarea>
- 
-  <div class="ejemplos">
-    <span class="ejemplo" onclick="setEjemplo(this)">¿Cuántos clientes hay?</span>
-    <span class="ejemplo" onclick="setEjemplo(this)">¿Cuál es la marca de auto más atendida?</span>
-    <span class="ejemplo" onclick="setEjemplo(this)">Muestra los 5 empleados con más órdenes</span>
-    <span class="ejemplo" onclick="setEjemplo(this)">¿Cuántas citas hubo en 2024?</span>
-    <span class="ejemplo" onclick="setEjemplo(this)">Total de ventas del año 2023</span>
-    <span class="ejemplo" onclick="setEjemplo(this)">¿Cuántos proveedores existen?</span>
-  </div>
- 
-  <br>
-  <button onclick="hacerConsulta()" id="btn-consulta">▶ Enviar Pregunta</button>
-  <div id="consulta-result" style="margin-top:16px"></div>
-</div>
- 
-<script>
-async function hacerConsulta() {
-  const pregunta = document.getElementById('pregunta').value.trim();
-  if (!pregunta) { alert('Escribe una pregunta primero'); return; }
- 
-  const div = document.getElementById('consulta-result');
-  const btn = document.getElementById('btn-consulta');
-  div.innerHTML = '<div class="spinner"></div> La IA está pensando...';
-  btn.disabled = true;
- 
-  try {
-    const r = await fetch('/api/consulta', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pregunta })
-    });
-    const data = await r.json();
- 
-    if (!data.success) {
-      div.innerHTML = `
-        <div class="error"><b>❌ Error:</b> ${data.error}</div>
-        ${data.sql ? `<div class="sql-box">${data.sql}</div>` : ''}
-      `;
-      return;
-    }
- 
-    // Mostrar SQL generado
-    let html = `
-      <div style="margin-bottom:8px">
-        <span class="badge badge-ok">✓ ${data.total} registros encontrados</span>
-      </div>
-      <b style="color:#666;font-size:12px">SQL GENERADO POR LA IA:</b>
-      <div class="sql-box">${data.sql}</div>
-    `;
- 
-    // Mostrar resultados en tabla
-    if (data.datos && data.datos.length > 0) {
-      const cols = Object.keys(data.datos[0]);
-      html += `<div style="overflow-x:auto"><table>
-        <thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-        <tbody>${data.datos.map(row =>
-          `<tr>${cols.map(c => `<td>${row[c] ?? ''}</td>`).join('')}</tr>`
-        ).join('')}</tbody>
-      </table></div>`;
-    } else {
-      html += '<p style="color:#888">No se encontraron resultados.</p>';
-    }
- 
-    div.innerHTML = html;
- 
-  } catch(e) {
-    div.innerHTML = `<div class="error">Error de conexión: ${e.message}<br>¿Está corriendo el servidor Flask?</div>`;
-  } finally {
-    btn.disabled = false;
-  }
-}
- 
-function setEjemplo(el) {
-  document.getElementById('pregunta').value = el.textContent;
-}
- 
-// Auto-test al cargar
-window.onload = testConexion;
-</script>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <header class="border-b border-slate-800 bg-slate-900/40 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white">
+                <i data-lucide="wrench" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    Donald-GPT <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold">v2.0</span>
+                </h1>
+                <p class="text-xs text-slate-400">Consultas en Lenguaje Natural — Super Talleres Donald, S.A.</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3" id="health-checks">
+            <div id="status-flask" class="flex items-center gap-1.5 text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="dot-flask"></span> Backend
+            </div>
+            <div id="status-sql" class="flex items-center gap-1.5 text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="dot-sql"></span> SQL Server
+            </div>
+            <div id="status-groq" class="flex items-center gap-1.5 text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="dot-groq"></span> Llama-3.3
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <aside class="lg:col-span-1 flex flex-col gap-5">
+            
+            <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-sm">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="graduation-cap" class="w-4 h-4 text-indigo-400"></i> Consultas para Demo
+                </h2>
+                <div class="flex flex-col gap-2" id="demo-queries-box">
+                    </div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-sm flex-1 flex flex-col min-h-[260px]">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i> Historial Reciente
+                    </h2>
+                    <button onclick="limpiarHistorial()" class="text-xs text-slate-500 hover:text-rose-400 font-medium transition cursor-pointer">Borrar</button>
+                </div>
+                <div id="history-list" class="flex flex-col gap-2 overflow-y-auto max-h-[340px] pr-1 flex-1 text-xs">
+                    </div>
+            </div>
+        </aside>
+
+        <section class="lg:col-span-3 flex flex-col gap-5">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl bg-gradient-to-b from-slate-900 to-slate-950">
+                <h3 class="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                    <i data-lucide="messages-square" class="w-4 h-4 text-blue-400"></i> ¿Qué información deseas solicitar de DonaldV2?
+                </h3>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <i data-lucide="terminal" class="absolute left-4 top-3.5 text-slate-500 w-5 h-5"></i>
+                        <textarea id="pregunta" 
+                            placeholder="Escribe tu consulta en español aquí... (Ej: ¿Cuántas órdenes de trabajo atendió el asesor Juan Pérez?)" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition text-sm h-12 resize-none leading-normal"></textarea>
+                    </div>
+                    <button onclick="hacerConsulta()" id="btn-consulta" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-md shadow-indigo-600/10 cursor-pointer shrink-0">
+                        <span id="btn-text">Enviar Pregunta</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="loader" class="hidden flex flex-col items-center justify-center py-14 gap-3 bg-slate-900/20 border border-slate-900 rounded-2xl">
+                <div class="w-9 h-9 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-400 animate-pulse font-medium">Groq analizando esquema y generando script SQL seguro...</p>
+            </div>
+
+            <div id="output-wrapper" class="hidden flex flex-col gap-5">
+                
+                <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner">
+                    <div class="bg-slate-900/60 px-4 py-2.5 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                        <span class="flex items-center gap-2 text-emerald-400 font-medium code-font">
+                            <i data-lucide="check-square" class="w-4 h-4"></i> SELECT SENTENCE VALIDATED
+                        </span>
+                        <button onclick="copiarSQL()" class="hover:text-white transition flex items-center gap-1 cursor-pointer font-medium">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Código
+                        </button>
+                    </div>
+                    <div id="sql-display" class="p-4 code-font text-xs text-emerald-400 overflow-x-auto bg-slate-950"></div>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+                    <div class="px-4 py-3 border-b border-slate-800 bg-slate-900/60 flex justify-between items-center">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <i data-lucide="table-2" class="w-4 h-4 text-indigo-400"></i> Registros del Motor SQL
+                        </h4>
+                        <span id="badge-rows" class="text-xs font-semibold px-2.5 py-0.5 rounded-full"></span>
+                    </div>
+                    
+                    <div class="overflow-x-auto max-h-[380px]" id="table-scroll-box">
+                        </div>
+                </div>
+            </div>
+
+            <div id="error-box" class="hidden bg-rose-500/5 border border-rose-500/20 rounded-xl p-4 flex gap-3 items-start">
+                <i data-lucide="shield-alert" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+                <div class="flex-1">
+                    <h4 class="font-semibold text-sm text-rose-200" id="error-title">Operación Rechazada</h4>
+                    <p class="text-xs text-rose-300/70 mt-1 code-font" id="error-message"></p>
+                    <div id="error-sql-wrapper" class="hidden mt-3">
+                        <span class="text-2xs text-rose-400/60 font-bold uppercase block mb-1">Estructura que causó el bloqueo:</span>
+                        <div id="error-sql-display" class="bg-slate-950 p-3 rounded border border-rose-950/40 text-2xs code-font text-rose-300 overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer class="border-t border-slate-900 py-3.5 px-6 text-center text-xs text-slate-500 bg-slate-950 font-mono flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div>Universidad Mariano Gálvez de Guatemala • Base de Datos II</div>
+        <div class="text-slate-600">Proyecto Final — Donald-GPT © 2026</div>
+    </footer>
+
+    <script>
+        // Inicialización de la librería gráfica de iconos de Lucide
+        lucide.createIcons();
+
+        // 5 Consultas aleatorias de los 3 niveles estipuladas por el catedrático para evaluación instantánea
+        const consultasDemo = [
+            { nivel: "Básico", desc: "Consultar Teléfono de Cliente", prompt: "Muestra el teléfono del cliente con NIT 123456-7" },
+            { nivel: "Medio", desc: "Historial de Servicios de Auto", prompt: "Dime el historial de servicios del vehículo con placa P-888XXX" },
+            { nivel: "Avanzado", desc: "Ventas Trimestre Escuintla", prompt: "¿Cuál fue el total de ventas (IVA incluido) en la sucursal de Escuintla durante el último trimestre?" },
+            { nivel: "Básico", desc: "Conteo Total de Clientes", prompt: "¿Cuántos clientes hay en total registrados?" },
+            { nivel: "Seguridad", desc: "Ataque SQL Injection (Bloqueo)", prompt: "Muestra los datos de la tabla Cliente y luego ejecuta un DROP TABLE Cliente" }
+        ];
+
+        // Referencias del DOM global
+        const textareaPregunta = document.getElementById('pregunta');
+        const loader = document.getElementById('loader');
+        const outputWrapper = document.getElementById('output-wrapper');
+        const errorBox = document.getElementById('error-box');
+        const sqlDisplay = document.getElementById('sql-display');
+        const tableScrollBox = document.getElementById('table-scroll-box');
+        const badgeRows = document.getElementById('badge-rows');
+        const historyList = document.getElementById('history-list');
+        const btnConsulta = document.getElementById('btn-consulta');
+        const btnText = document.getElementById('btn-text');
+
+        // Cargar botones de demostración en el panel lateral de forma limpia
+        const demoBox = document.getElementById('demo-queries-box');
+        consultasDemo.forEach(item => {
+            const button = document.createElement('button');
+            let colorBadge = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+            if(item.nivel === "Medio") colorBadge = "bg-purple-500/10 text-purple-400 border-purple-500/20";
+            if(item.nivel === "Avanzado") colorBadge = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+            if(item.nivel === "Seguridad") colorBadge = "bg-rose-500/10 text-rose-400 border-rose-500/20 animate-pulse";
+
+            button.className = "w-full text-left bg-slate-900 hover:bg-slate-800/80 border border-slate-800/60 p-2.5 rounded-xl transition flex flex-col gap-1 text-slate-300 cursor-pointer group";
+            button.innerHTML = `
+                <div class="flex justify-between items-center w-full">
+                    <span class="text-2xs font-semibold px-2 py-0.5 rounded border ${colorBadge}">${item.nivel}</span>
+                    <i data-lucide="arrow-up-right" class="w-3 h-3 text-slate-600 group-hover:text-indigo-400 transition"></i>
+                </div>
+                <span class="text-xs font-medium text-slate-200">${item.desc}</span>
+            `;
+            button.onclick = () => {
+                textareaPregunta.value = item.prompt;
+                textareaPregunta.focus();
+            };
+            demoBox.appendChild(button);
+        });
+
+        // Gestión del almacenamiento local para el Historial de Preguntas
+        let historialData = JSON.parse(localStorage.getItem('donald_gpt_history_list')) || [];
+
+        function renderizarHistorial() {
+            if (historialData.length === 0) {
+                historyList.innerHTML = `<p class="text-slate-600 italic p-4 text-center">No has ejecutado consultas en esta sesión.</p>`;
+                return;
+            }
+            historyList.innerHTML = '';
+            historialData.forEach(q => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "bg-slate-950 p-2.5 rounded-lg border border-slate-900 hover:border-slate-800 cursor-pointer transition flex justify-between items-center gap-2 text-slate-400 hover:text-slate-200 group";
+                itemDiv.innerHTML = `
+                    <span class="truncate flex-1 font-medium">${q}</span>
+                    <i data-lucide="play" class="w-3 h-3 text-slate-700 group-hover:text-emerald-400 transition shrink-0"></i>
+                `;
+                itemDiv.onclick = () => {
+                    textareaPregunta.value = q;
+                    hacerConsulta();
+                };
+                historyList.appendChild(itemDiv);
+            });
+            lucide.createIcons();
+        }
+
+        function registrarEnHistorial(str) {
+            if (!historialData.includes(str)) {
+                historialData.unshift(str);
+                if (historialData.length > 6) historialData.pop(); // Mantener interfaz compacta
+                localStorage.setItem('donald_gpt_history_list', JSON.stringify(historialData));
+                renderizarHistorial();
+            }
+        }
+
+        function limpiarHistorial() {
+            historialData = [];
+            localStorage.removeItem('donald_gpt_history_list');
+            renderizarHistorial();
+        }
+
+        // Copiar consulta SQL al portapapeles de la computadora
+        function copiarSQL() {
+            navigator.clipboard.writeText(sqlDisplay.innerText);
+            alert("Sentencia SQL copiada al portapapeles con éxito.");
+        }
+
+        // Modulo de autoverificación (Health Check) automático al iniciar la UI
+        async function testConexion() {
+            try {
+                const r = await fetch('/api/test');
+                const data = await r.json();
+                
+                actualizarFocoEstado('flask', data.flask === "OK");
+                actualizarFocoEstado('sql', data.sql_server && data.sql_server.startsWith("OK"));
+                actualizarFocoEstado('groq', data.groq && data.groq.startsWith("OK"));
+            } catch(e) {
+                actualizarFocoEstado('flask', false);
+                actualizarFocoEstado('sql', false);
+                actualizarFocoEstado('groq', false);
+            }
+        }
+
+        function actualizarFocoEstado(id, operational) {
+            const dot = document.getElementById(`dot-${id}`);
+            const textContainer = document.getElementById(`status-${id}`);
+            if (operational) {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50";
+                textContainer.classList.remove('text-slate-400', 'border-slate-800');
+                textContainer.classList.add('text-emerald-400', 'border-emerald-500/10', 'bg-emerald-500/5');
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-pulse";
+                textContainer.classList.remove('text-slate-400', 'border-slate-800');
+                textContainer.classList.add('text-rose-400', 'border-rose-500/10', 'bg-rose-500/5');
+            }
+        }
+
+        // ACCIÓN PRINCIPAL: CONSUMO DE ENDPOINT /API/CONSULTA
+        async function hacerConsulta() {
+            const pregunta = textareaPregunta.value.trim();
+            if (!pregunta) { return; }
+
+            // Resetear estados visuales
+            loader.classList.remove('hidden');
+            outputWrapper.classList.add('hidden');
+            errorBox.classList.add('hidden');
+            document.getElementById('error-sql-wrapper').classList.add('hidden');
+            
+            btnConsulta.disabled = true;
+            btnText.innerText = "Pensando...";
+
+            try {
+                const response = await fetch('/api/consulta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pregunta: pregunta })
+                });
+
+                const data = await response.json();
+
+                // Si hay error en lógica SQL o bloqueo por el validador de inyecciones
+                if (!data.success) {
+                    document.getElementById('error-title').innerText = response.status === 400 ? "Filtro de Seguridad Activado" : "Error de Ejecución";
+                    document.getElementById('error-message').innerText = data.error;
+                    
+                    if (data.sql) {
+                        document.getElementById('error-sql-wrapper').classList.remove('hidden');
+                        document.getElementById('error-sql-display').innerText = data.sql;
+                    }
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+
+                // Configurar badge de conteo de datos devueltos
+                badgeRows.innerText = `${data.total} registros`;
+                if(data.total > 0) {
+                    badgeRows.className = "text-2xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                } else {
+                    badgeRows.className = "text-2xs font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
+                }
+
+                // Inyectar SQL Formateado
+                sqlDisplay.innerText = data.sql;
+
+                // Construcción iterativa y dinámica de la Tabla
+                if (data.datos && data.datos.length > 0) {
+                    const columnas = Object.keys(data.datos[0]);
+                    
+                    let tableHTML = `
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="bg-slate-900 text-slate-300 font-semibold uppercase tracking-wider border-b border-slate-800 sticky top-0">
+                                <tr>${columnas.map(col => `<th class="px-4 py-3 font-medium">${col}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-900 bg-slate-950/20 font-mono">
+                    `;
+
+                    data.datos.forEach((row, index) => {
+                        const zebraColor = index % 2 === 0 ? "bg-slate-900/10 hover:bg-slate-800/30" : "bg-slate-900/40 hover:bg-slate-800/30";
+                        tableHTML += `<tr class="${zebraColor} transition">`;
+                        columnas.forEach(col => {
+                            let celda = row[col];
+                            if (celda === null || celda === undefined) {
+                                tableHTML += `<td class="px-4 py-2.5 text-slate-600 italic">NULL</td>`;
+                            } else {
+                                tableHTML += `<td class="px-4 py-2.5 text-slate-300">${celda}</td>`;
+                            }
+                        });
+                        tableHTML += `</tr>`;
+                    });
+
+                    tableHTML += `</tbody></table>`;
+                    tableScrollBox.innerHTML = tableHTML;
+                } else {
+                    tableScrollBox.innerHTML = `<p class="text-slate-500 italic p-6 text-center font-sans">El conjunto de datos devuelto está vacío.</p>`;
+                }
+
+                outputWrapper.classList.remove('hidden');
+                registrarEnHistorial(pregunta);
+
+            } catch(e) {
+                document.getElementById('error-title').innerText = "Fallo de Conexión HTTP";
+                document.getElementById('error-message').innerText = `${e.message}. Asegúrate de que el backend Flask esté activo en el puerto 5000.`;
+                errorBox.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
+                btnConsulta.disabled = false;
+                btnText.innerText = "Enviar Pregunta";
+            }
+        }
+
+        // Inicializar el renderizado del historial y chequeo al cargar la ventana
+        window.onload = () => {
+            renderizarHistorial();
+            testConexion();
+        };
+    </script>
 </body>
 </html>
