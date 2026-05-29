@@ -24,10 +24,12 @@ REGLAS OBLIGATORIAS:
 4. Si la pregunta no se puede responder con los datos disponibles, responde: SELECT 'No tengo informacion suficiente para responder esa pregunta' AS Mensaje
 5. Usa TOP 100 cuando la consulta pueda retornar muchos registros, para no saturar el sistema.
 6. Las fechas en SQL Server se escriben como '2024-01-01'. Para año actual usa YEAR(GETDATE()).
-7. Para buscar texto usa LIKE '%texto%'.
-8. Siempre usa alias descriptivos en espanol para las columnas del resultado.
-9. Para nombres completos de personas concatena: PrimerNombre + ' ' + PrimerApellido.
-10. SIEMPRE usa la tabla OrdeDeTrabajo (no OrdenDeTrabajo) y DetalleManoDeObra (no DetalleManoDObra).
+7. Para filtrar rangos de tiempo relativos (ej. últimos 3 meses, mes pasado, hace un año), utiliza la función DATEDIFF de SQL Server. Ejemplo para el mes pasado: DATEDIFF(MONTH, Fecha, GETDATE()) = 1.
+8. Para buscar texto usa LIKE '%texto%'.
+9. Siempre usa alias descriptivos en espanol para las columnas del resultado.
+10. Para nombres completos de personas concatena: PrimerNombre + ' ' + PrimerApellido.
+11. SIEMPRE usa la tabla OrdeDeTrabajo (no OrdenDeTrabajo) y DetalleManoDeObra (no DetalleManoDObra).
+12. En la tabla MovimientoMaterial usa 'Unidades' para cantidades y 'FechaMovimiento' para fechas. Nunca uses columnas inventadas como 'Cantidad' o 'Fecha'.
 
 ESQUEMA DE LA BASE DE DATOS DonaldV2:
 
@@ -141,7 +143,22 @@ Pregunta: Total de la nomina de enero 2024
 SQL: SELECT SUM(nr.TotalIngresos) AS TotalIngresos, SUM(nr.TotalDescuentos) AS TotalDescuentos, SUM(nr.Liquido) AS TotalLiquido FROM Nomina n JOIN NominaResumen nr ON n.CodigoNomina = nr.CodigoNomina WHERE MONTH(n.Inicio) = 1 AND YEAR(n.Inicio) = 2024
 
 Pregunta: Clientes que tienen 30 años
-SQL: SELECT sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreCliente FROM Cliente c JOIN SocioNegocio sn ON c.CodigoSocio = sn.CodigoSocio WHERE DATEDIFF(YEAR, sn.FechaNacimiento, GETDATE()) = 30"""
+SQL: SELECT sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreCliente FROM Cliente c JOIN SocioNegocio sn ON c.CodigoSocio = sn.CodigoSocio WHERE DATEDIFF(YEAR, sn.FechaNacimiento, GETDATE()) = 30
+
+Pregunta: Muestra las placas de los autos junto con el nombre de su dueño
+SQL: SELECT TOP 100 a.Placa, sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombrePropietario FROM Automovil a JOIN Cita c ON a.CodigoAutomovil = c.CodigoAutomovil JOIN Cliente cl ON c.CodigoCliente = cl.CodigoCliente JOIN SocioNegocio sn ON cl.CodigoSocio = sn.CodigoSocio GROUP BY a.Placa, sn.PrimerNombre, sn.PrimerApellido
+
+Pregunta: Muestra los movimientos de materiales
+SQL: SELECT TOP 100 mm.NumeroMovimiento, mm.FechaMovimiento, mm.Unidades, mm.Referencia, m.Descripcion AS Material FROM MovimientoMaterial mm JOIN DetalleMovimientoMaterial dmm ON mm.NumeroMovimiento = dmm.NumeroMovimiento JOIN Material m ON dmm.CodigoMaterial = m.CodigoMaterial
+
+Pregunta: Listar las primeras 20 citas indicando la fecha el nombre y apellido del empleado asignado
+SQL: SELECT TOP 20 c.FechaCita, sn.PrimerNombre + ' ' + sn.PrimerApellido AS NombreEmpleado FROM Cita c JOIN Empleado e ON c.CodigoEmpleado = e.CodigoEmpleado JOIN SocioNegocio sn ON e.CodigoSocio = sn.CodigoSocio ORDER BY c.FechaCita
+
+Pregunta: Cuantos empleados hay registrados en cada departamento de trabajo
+SQL: SELECT dt.Descripcion AS Departamento, COUNT(ct.CodigoEmpleado) AS TotalEmpleados FROM DepartamentoTrabajo dt JOIN ContratroTrabajo ct ON dt.CodigoDepartamentoTrabajo = ct.CodigoDepartamentoTrabajo GROUP BY dt.Descripcion ORDER BY TotalEmpleados DESC
+
+Pregunta: Muestra un resumen de los primeros 10 detalles de mano de obra registrados
+SQL: SELECT TOP 10 dmo.NumeroOrden, dmo.NumeroManoDeObra, mo.Descripcion AS Servicio, dmo.Unidades, dmo.FechaInicio, dmo.FechaFin FROM DetalleManoDeObra dmo JOIN ManoObra mo ON dmo.CodigoManoObra = mo.CodigoManoObra"""
 
 
 def preguntar_ia(pregunta: str, schema: str) -> str:
